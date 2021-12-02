@@ -1,62 +1,21 @@
-var Imap = require('imap');
+const notifier = require('mail-notifier');
 var axios = require('axios');
-var imap = new Imap({
+const imap = {
   user: 'YOUR_EMAIL_ID',
   password: 'YOUR_PASSWORD',
-  host: 'imap.gmail.com', // put your mail host
-  port: 993, // your mail host port
-  tls: true 
-})
-
-function openInbox(cb) {
-  imap.openBox('INBOX', true, cb);
-
+  host: "imap.gmail.com",
+  port: 993, // imap port
+  tls: true,// use secure connection
+  tlsOptions: { rejectUnauthorized: false },
+  box:'INBOX'
 }
+notifier(imap)
+  .on('mail', mail => CallJira(mail['subject'], mail['text']))
+  .start();
 
-imap.once('ready', function() {
-  openInbox(function(err, box) {
-    if (err) throw err;
-    var f = imap.seq.fetch('1:1', {
-      bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
-      struct: true
-    });
-    f.on('message', function(msg, seqno) {
-      msg.on('body', function(stream, info) {
-        var buffer = '';
-        stream.on('data', function(chunk) {
-          buffer += chunk.toString('utf8');
-        });
-        stream.once('end', function() {
-          var data = Imap.parseHeader(buffer);
-           CallJira(data['subject'][0]);
-        });
-      });
-     
-      msg.once('end', function() {
-        console.log('Finished');
-      });
-    });
-    f.once('error', function(err) {
-      console.log('Fetch error: ' + err);
-    });
-    f.once('end', function() {
-      console.log('Done fetching all messages!');
-      imap.end();
-    });
-  });
-});
 
-imap.once('error', function(err) {
-  console.log(err);
-});
 
-imap.once('end', function() {
-  console.log('Connection ended');
-});
-
-imap.connect();
-
-function CallJira(subject){
+function CallJira(subject, text){
     
   var data = JSON.stringify({
     "fields": {
@@ -64,13 +23,13 @@ function CallJira(subject){
         "key": "NODE"
       },
       "summary": subject,
-      "description": subject,
+      "description": text,
       "issuetype": {
         "name": "Bug"
       }
     }
   });
-
+  
   var config = {
     method: 'post',
     url: '<YOUR_JIRA_URL>rest/api/2/issue',
@@ -99,12 +58,12 @@ function CallJira(subject){
 
 function CallSlack(jira_ticket_url){
   var data = JSON.stringify({
-      "text": jira_ticket_url
+      "text": <YOUR_JIRA_PROFILE>/jira_ticket_url
     });
 
     var config = {
       method: 'post',
-      url: '<YOUR_SLACK_WEBHOOK_URL>',
+      url: '<YOUR_SLACK_WEBHOOK_URL>/',
       headers: { 
         'Content-Type': 'application/json'
       },
