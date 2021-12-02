@@ -8,7 +8,7 @@ For Read Email enable IMAP
 5. Click Save Changes
 
 node Packages  :
-  npm i Imap
+  npm i mail-notifier
   npm i axios
   
 Create Slack Webhook url For Send Messages
